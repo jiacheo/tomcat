@@ -67,3 +67,20 @@ instructions for reporting a bug
 ### Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for more info.
+
+# 代码研究readme  
+
+## 代码版本
+
+> 本代码研究的tomcat 版本为 9.0， 基于研究的目的， 并不一定是最新的代码库上的代码。  
+  
+## 如何启动调试  
+
++ 很简单，通过idea 导入本工程（maven），然后用idea新建的application 跑起来即可。  
++ 入口程序为 `org.apache.catalina.startup.Bootstrap` ， 启动参数请自己看代码吧，就那么几个。  
+  
+  
+
+
+
+
