@@ -17,20 +17,6 @@
 package org.apache.catalina.startup;
 
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.reflect.Constructor;
-import java.net.ConnectException;
-import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.LogManager;
-
 import org.apache.catalina.Container;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
@@ -48,6 +34,16 @@ import org.apache.tomcat.util.res.StringManager;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXParseException;
+
+import java.io.*;
+import java.lang.reflect.Constructor;
+import java.net.ConnectException;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.LogManager;
 
 
 /**
@@ -281,106 +277,145 @@ public class Catalina {
         digester.setUseContextClassLoader(true);
 
         // Configure the actions we will be using
+        //创建StandardServer对象
         digester.addObjectCreate("Server",
                                  "org.apache.catalina.core.StandardServer",
                                  "className");
         digester.addSetProperties("Server");
+        //调用Catalina的setServer方法, 把server对象set进去
         digester.addSetNext("Server",
                             "setServer",
                             "org.apache.catalina.Server");
 
+        //创建NamingResourcesImpl对象
         digester.addObjectCreate("Server/GlobalNamingResources",
                                  "org.apache.catalina.deploy.NamingResourcesImpl");
         digester.addSetProperties("Server/GlobalNamingResources");
+        //调用Server的setGlobalNamingResources讲 该对象设置进去
         digester.addSetNext("Server/GlobalNamingResources",
                             "setGlobalNamingResources",
                             "org.apache.catalina.deploy.NamingResourcesImpl");
 
+        //实例化各种Listner对象, 比如 VersionLoggerListener AprLifecycleListener JasperListener JreMemoryLeakPreventionListener GlobalResourcesLifecycleListener ThreadLocalLeakPreventionListener
         digester.addObjectCreate("Server/Listener",
                                  null, // MUST be specified in the element
                                  "className");
         digester.addSetProperties("Server/Listener");
+        //调用 Server的  将这些listener添加进去
         digester.addSetNext("Server/Listener",
                             "addLifecycleListener",
                             "org.apache.catalina.LifecycleListener");
 
+        //创建 StandardService 对象
+        //默认是StandardService, 但也可以通过 className 指定自己实现的Service
         digester.addObjectCreate("Server/Service",
                                  "org.apache.catalina.core.StandardService",
                                  "className");
         digester.addSetProperties("Server/Service");
+        //调用Server的 addService 将多个service 添加到server中
         digester.addSetNext("Server/Service",
                             "addService",
                             "org.apache.catalina.Service");
 
+        //创建 service 下的Listener对象
         digester.addObjectCreate("Server/Service/Listener",
                                  null, // MUST be specified in the element
                                  "className");
         digester.addSetProperties("Server/Service/Listener");
+        //通过 Service 的 addLifecycleListener 将这些Listener添加进去
+        //tomcat默认的配置并没有这个配置, 必须自己指定
         digester.addSetNext("Server/Service/Listener",
                             "addLifecycleListener",
                             "org.apache.catalina.LifecycleListener");
 
         //Executor
+        //创建 Service 下的 Executor 对象, 默认是tomcat自己实现的 StandardThreadExecutor , 可以通过指定 className 来修改
+        //tomcat 6 之后, 改接口 继承了jdk5之 并发包自带的 Executor 接口
         digester.addObjectCreate("Server/Service/Executor",
                          "org.apache.catalina.core.StandardThreadExecutor",
                          "className");
         digester.addSetProperties("Server/Service/Executor");
 
+        //调用 Service 的 addExecutor 将创建的 executor 依次添加进去
         digester.addSetNext("Server/Service/Executor",
                             "addExecutor",
                             "org.apache.catalina.Executor");
 
-
+        //创建 Connector 实例, 然后把实例对应需要的 executor 从上面的 service中取出来, 设置到connector里面
+        //这里的connector的 会根据用户配置的不同的 protocol, 设置不同的protocolHandler实例
         digester.addRule("Server/Service/Connector",
                          new ConnectorCreateRule());
+
+        //除了executor, sslImplementationName, protocol 几个字段, 其他的 xml attr 都会被设置到 Connector 对象里面.
+        //tomcat 1.7 里面有个 connectionTimeout 再这里并没有什么卵用
         digester.addRule("Server/Service/Connector", new SetAllPropertiesRule(
                 new String[]{"executor", "sslImplementationName", "protocol"}));
+
+        //将创建的 connector 对象 设置到 service里面
         digester.addSetNext("Server/Service/Connector",
                             "addConnector",
                             "org.apache.catalina.connector.Connector");
 
+        //创建 SSLHostConfig 对象
         digester.addObjectCreate("Server/Service/Connector/SSLHostConfig",
                                  "org.apache.tomcat.util.net.SSLHostConfig");
         digester.addSetProperties("Server/Service/Connector/SSLHostConfig");
+        //将创建的 SSLHostConfig 对象设置到 Connector 里面
         digester.addSetNext("Server/Service/Connector/SSLHostConfig",
                 "addSslHostConfig",
                 "org.apache.tomcat.util.net.SSLHostConfig");
 
+        //创建 Certificate 对象
         digester.addRule("Server/Service/Connector/SSLHostConfig/Certificate",
                          new CertificateCreateRule());
+        //将 xml attr 中的 除了 type 字段, 其他字段都设置到 Certificate 对象里面
         digester.addRule("Server/Service/Connector/SSLHostConfig/Certificate",
                          new SetAllPropertiesRule(new String[]{"type"}));
+        //将创建的 Certificate 对象添加到 SSLHostConfig 里面
         digester.addSetNext("Server/Service/Connector/SSLHostConfig/Certificate",
                             "addCertificate",
                             "org.apache.tomcat.util.net.SSLHostConfigCertificate");
 
+        //创建 Connector 的Listener 对象
         digester.addObjectCreate("Server/Service/Connector/Listener",
                                  null, // MUST be specified in the element
                                  "className");
         digester.addSetProperties("Server/Service/Connector/Listener");
+        //将创建的 Listener 对象添加到 Connector 里面
         digester.addSetNext("Server/Service/Connector/Listener",
                             "addLifecycleListener",
                             "org.apache.catalina.LifecycleListener");
 
+        //创建 UpgradeProtocol 对象, 用于 协议升级 使用, 比如HTTP2
         digester.addObjectCreate("Server/Service/Connector/UpgradeProtocol",
                                   null, // MUST be specified in the element
                                   "className");
         digester.addSetProperties("Server/Service/Connector/UpgradeProtocol");
+        //将创建的 UpgradeProtocol 对象添加到 Connector 对象里面
         digester.addSetNext("Server/Service/Connector/UpgradeProtocol",
                             "addUpgradeProtocol",
                             "org.apache.coyote.UpgradeProtocol");
 
         // Add RuleSets for nested elements
+        // 添加内嵌的规则
+        // 添加 GlobalNamingResources 的子对象, 比如ejb等
         digester.addRuleSet(new NamingRuleSet("Server/GlobalNamingResources/"));
+        // 添加 Service 的子对象, 比如 Engine
         digester.addRuleSet(new EngineRuleSet("Server/Service/"));
+        // 添加 Engine 的子对象, 比如 Host
         digester.addRuleSet(new HostRuleSet("Server/Service/Engine/"));
+        // 添加 Host 的子对象, 比如 Context
         digester.addRuleSet(new ContextRuleSet("Server/Service/Engine/Host/"));
+        // 添加 集群配置支持, 具体建  ClusterRuleSet 有一大坨
         addClusterRuleSet(digester, "Server/Service/Engine/Host/Cluster/");
+        // 给 Host 对象添加 Naming Service, 比如 Ejb
         digester.addRuleSet(new NamingRuleSet("Server/Service/Engine/Host/Context/"));
 
         // When the 'engine' is found, set the parentClassLoader.
+        //把xml attr 都设置到 engine对象里面
         digester.addRule("Server/Service/Engine",
                          new SetParentClassLoaderRule(parentClassLoader));
+        //Engine下可以没有host, 直接把 cluster 配置给 Engine
         addClusterRuleSet(digester, "Server/Service/Engine/Cluster/");
 
         long t2=System.currentTimeMillis();
@@ -506,12 +541,15 @@ public class Catalina {
 
         long t1 = System.nanoTime();
 
+        //各种目录
         initDirs();
 
         // Before digester - it may be needed
+        // jndi (按需)
         initNaming();
 
         // Create and execute our Digester
+        // xml 解析器
         Digester digester = createStartDigester();
 
         InputSource inputSource = null;
@@ -519,6 +557,7 @@ public class Catalina {
         File file = null;
         try {
             try {
+                //配置文件
                 file = configFile();
                 inputStream = new FileInputStream(file);
                 inputSource = new InputSource(file.toURI().toURL().toString());
@@ -577,6 +616,7 @@ public class Catalina {
             try {
                 inputSource.setByteStream(inputStream);
                 digester.push(this);
+                //解析配置并实例化
                 digester.parse(inputSource);
             } catch (SAXParseException spe) {
                 log.warn("Catalina.start using " + getConfigFile() + ": " +
@@ -601,10 +641,12 @@ public class Catalina {
         getServer().setCatalinaBase(Bootstrap.getCatalinaBaseFile());
 
         // Stream redirection
+        // System.out 和 System.err 输出定向到日志
         initStreams();
 
         // Start the new server
         try {
+            //初始化服务器
             getServer().init();
         } catch (LifecycleException e) {
             if (Boolean.getBoolean("org.apache.catalina.startup.EXIT_ON_INIT_FAILURE")) {
@@ -654,6 +696,7 @@ public class Catalina {
 
         // Start the new server
         try {
+            //启动服务器
             getServer().start();
         } catch (LifecycleException e) {
             log.fatal(sm.getString("catalina.serverStartFail"), e);
