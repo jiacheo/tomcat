@@ -112,6 +112,10 @@ public final class Response {
     String contentType = null;
     String contentLanguage = null;
     Charset charset = null;
+    // Retain the original name used to set the charset so exactly that name is
+    // used in the ContentType header. Some (arguably non-specification
+    // compliant) user agents are very particular
+    String characterEncoding = null;
     long contentLength = -1;
     private Locale locale = DEFAULT_LOCALE;
 
@@ -123,11 +127,6 @@ public final class Response {
      * Holds request error exception.
      */
     Exception errorException = null;
-
-    /**
-     * Has the charset been explicitly set.
-     */
-    boolean charsetSet = false;
 
     Request req;
 
@@ -420,23 +419,31 @@ public final class Response {
      * Overrides the character encoding used in the body of the response. This
      * method must be called prior to writing output using getWriter().
      *
-     * @param charset The character encoding.
+     * @param characterEncoding The name of character encoding.
+     *
+     * @throws UnsupportedEncodingException If the specified name is not
+     *         recognised
      */
-    public void setCharset(Charset charset) {
+    public void setCharacterEncoding(String characterEncoding) throws UnsupportedEncodingException {
         if (isCommitted()) {
             return;
         }
-        if (charset == null) {
+        if (characterEncoding == null) {
             return;
         }
 
-        this.charset = charset;
-        charsetSet = true;
+        this.charset = B2CConverter.getCharset(characterEncoding);
+        this.characterEncoding = characterEncoding;
     }
 
 
     public Charset getCharset() {
         return charset;
+    }
+
+
+    public String getCharacterEncoding() {
+        return characterEncoding;
     }
 
 
@@ -478,7 +485,6 @@ public final class Response {
             if (charsetValue.length() > 0) {
                 try {
                     charset = B2CConverter.getCharset(charsetValue);
-                    charsetSet = true;
                 } catch (UnsupportedEncodingException e) {
                     log.warn(sm.getString("response.encoding.invalid", charsetValue), e);
                 }
@@ -495,9 +501,8 @@ public final class Response {
         String ret = contentType;
 
         if (ret != null
-            && charset != null
-            && charsetSet) {
-            ret = ret + ";charset=" + charset.name();
+            && charset != null) {
+            ret = ret + ";charset=" + characterEncoding;
         }
 
         return ret;
@@ -542,7 +547,7 @@ public final class Response {
         contentLanguage = null;
         locale = DEFAULT_LOCALE;
         charset = null;
-        charsetSet = false;
+        characterEncoding = null;
         contentLength = -1;
         status = 200;
         message = null;

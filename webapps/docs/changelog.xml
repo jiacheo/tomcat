@@ -44,7 +44,166 @@
   They eventually become mixed with the numbered issues. (I.e., numbered
   issues do not "pop up" wrt. others).
 -->
-<section name="Tomcat 9.0.0.M22 (markt)" rtext="in development">
+<section name="Tomcat 9.0.0.M24 (markt)" rtext="in development">
+  <subsection name="Catalina">
+    <changelog>
+      <add>
+        <bug>52924</bug>: Add support for a Tomcat specific deployment
+        descriptor, <code>/WEB-INF/tomcat-web.xml</code>. This descriptor has an
+        identical format to <code>/WEB-INF/web.xml</code>. The Tomcat descriptor
+        takes precedence over any settings in <code>conf/web.xml</code> but does
+        not take precedence over any settings in <code>/WEB-INF/web.xml</code>.
+        (markt)
+      </add>
+    </changelog>
+  </subsection>
+  <subsection name="Coyote">
+    <changelog>
+      <fix>
+        Enable TLS connectors to use Java key stores that contain multiple keys
+        where each key has a separate password. Based on a patch by Frank
+        Taffelt. (markt)
+      </fix>
+    </changelog>
+  </subsection>
+  <subsection name="Jasper">
+    <changelog>
+      <add>
+        <bug>53031</bug>: Add support for the <code>fork</code> option when
+        compiling JSPs with the Jasper Ant task and javac. (markt)
+      </add>
+    </changelog>
+  </subsection>
+  <subsection name="Other">
+    <changelog>
+      <add>
+        <bug>52791</bug>: Add the ability to set the defaults used by the
+        Windows installer from a configuration file. Patch provided by Sandra
+        Madden. (markt)
+      </add>
+    </changelog>
+  </subsection>
+</section>
+<section name="Tomcat 9.0.0.M23 (markt)" rtext="release in progress">
+  <subsection name="Catalina">
+    <changelog>
+      <fix>
+        <bug>49464</bug>: Improve the Default Servlet's handling of static files
+        when the file encoding is not compatible with the required response
+        encoding. (markt)
+      </fix>
+      <fix>
+        <bug>61214</bug>: Remove deleted attribute <code>servlets</code> from
+        the Context MBean description. Patch provided by Alexis Hassler. (markt)
+      </fix>
+      <fix>
+        <bug>61215</bug>: Correctly define <code>addConnectorPort</code> and
+        <code>invalidAuthenticationWhenDeny</code> in the
+        <code>mbean-descriptors.xml</code> file for the
+        <code>org.apache.catalina.valves</code> package so that the attributes
+        are accessible via JMX. (markt)
+      </fix>
+      <fix>
+        <bug>61216</bug>: Improve layout for <code>CompositeData</code> and
+        <code>TabularData</code> when viewing via the JMX proxy servlet. Patch
+        provided by Alexis Hassler. (markt)
+      </fix>
+      <fix>
+        Additional permission for deleting files is granted to JULI as it is
+        required by FileHandler when running under a Security Manager. The
+        thread that cleans the log files is marked as daemon thread.
+        (violetagg)
+      </fix>
+      <fix>
+        <bug>61229</bug>: Correct a regression in 9.0.0.M21 that broke WebDAV
+        handling for resources with names that included a <code>&amp;</code>
+        character. (markt)
+      </fix>
+    </changelog>
+  </subsection>
+  <subsection name="Coyote">
+    <changelog>
+      <fix>
+        Restore the ability to configure support for SSLv3. Enabling this
+        protocol will trigger a warning in the logs since it is known to be
+        insecure. (markt)
+      </fix>
+      <add>
+        Add LoadBalancerDrainingValve, a Valve designed to reduce the amount of
+        time required for a node to drain its authenticated users. (schultz)
+      </add>
+      <fix>
+        Do not log a warning when a <code>null</code> session is returned for an
+        OpenSSL based TLS session since this is expected when session tickets
+        are enabled. (markt)
+      </fix>
+      <fix>
+        When the access log valve logs a TLS related request attribute and the
+        NIO2 connector is used with OpenSSL, ensure that the TLS attributes are
+        available to the access log valve when the connection is closing.
+        (markt)
+      </fix>
+      <fix>
+        <bug>60461</bug>: Sync SSL session access for the APR connector. (remm)
+      </fix>
+      <fix>
+        <bug>61224</bug>: Make the <code>GlobalRequestProcessor</code> MBean
+        attributes read-only. Patch provided by Alexis Hassler. (markt)
+      </fix>
+    </changelog>
+  </subsection>
+  <subsection name="Jasper">
+    <changelog>
+      <fix>
+        <bug>49176</bug>: When generating JSP runtime error messages that quote
+        the relevant JSP source code, switch from using the results of the JSP
+        page parsing process to using the JSR 045 source map data to identify
+        the correct part of the JSP source from the stack trace. This
+        significantly reduces the memory footprint of Jasper in development
+        mode, provides a small performance improvement for error page generation
+        and enables source quotes to continue to be provided after a Tomcat
+        restart. (markt)
+      </fix>
+    </changelog>
+  </subsection>
+  <subsection name="Web applications">
+    <changelog>
+      <fix>
+        Remove references to the Loader attribute
+        <code>searchExternalFirst</code> from the documentation since the
+        attribute is no longer supported. (markt)
+      </fix>
+    </changelog>
+  </subsection>
+  <subsection name="Tribes">
+    <changelog>
+      <add>
+        <bug>51513</bug>: Add support for the <code>compressionMinSize</code>
+        attribute to the <code>GzipInterceptor</code>, add optional statistics
+        collection and expose the Interceptor over JMX. Based on a patch by
+        Christian Stöber. (markt)
+      </add>
+      <add>
+        <bug>61127</bug>Allow human-readable names for channelSendOptions and
+        mapSendOptions. Patch provided by Igal Sapir. (schultz)
+      </add>
+    </changelog>
+  </subsection>
+  <subsection name="Other">
+    <changelog>
+      <scode>
+        Restore the local definition of the web service annotations since the
+        JRE provided versions are deprecated and Java 9 does not provide them by
+        default. (markt)
+      </scode>
+      <fix>
+        Add necessary Java 9 configuration options to the startup scripts to
+        prevent warnings being generated on web application stop. (markt)
+      </fix>
+    </changelog>
+  </subsection>
+</section>
+<section name="Tomcat 9.0.0.M22 (markt)" rtext="2017-06-26">
   <subsection name="Catalina">
     <changelog>
       <fix>
@@ -124,6 +283,21 @@
         <code>AsyncContext.dispatch()</code> ensure that
         <code>getRequestURI()</code> for the dispatched request matches that of
         the original request. (markt)
+      </fix>
+      <fix>
+        <bug>61197</bug>: Ensure that the charset name used in the
+        <code>Content-Type</code> header has exactly the same form as that
+        provided by the application. This reverts a behavioural change in
+        9.0.0.M21 that caused problems for some clients. (markt)
+      </fix>
+      <fix>
+        <bug>61201</bug>: Ensure that the <code>SCRIPT_NAME</code> environment
+        variable for CGI executables is populated in a consistent way regardless
+        of how the CGI servlet is mapped to a request. (markt)
+      </fix>
+      <fix>
+        Ensure to send a space between trailer field name and field value
+        for HTTP responses trailer fields. (huxing)
       </fix>
     </changelog>
   </subsection>
@@ -211,6 +385,10 @@
         and/or stack traces on web application stop and/or start when running
         under a security manager. (markt)
       </fix>
+      <fix>
+        Correct the TLS configuration documentation to remove SSLv2 and SSLv3
+        from the list of supported protocols. (markt)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Other">
@@ -292,10 +470,10 @@
         (markt)
       </update>
       <scode>
-        Start to switch to using <code>Charset</code> rather than
-        <code>String</code> to store encoding configuration settings to reduce
-        the number of places the associated <code>Charset</code> needs to be
-        looked up. (markt)
+        Switch to using <code>Charset</code> rather than <code>String</code> to
+        store encoding settings (including for configuration and for the
+        <code>Content-Type header</code>) to reduce the number of places the
+        associated <code>Charset</code> needs to be looked up. (markt)
       </scode>
       <fix>
         Use a more reliable mechanism for the <code>DefaultServlet</code> when
